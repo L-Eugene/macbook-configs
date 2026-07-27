@@ -7,3 +7,18 @@ result-*
 
 # Ignore NixOS interactive test driver history
 **/.nixos-test-history
+
+# Agenix – temporary plaintext files created during secret editing
+*.age.d/
+# NOTE: *.age files (encrypted) should be committed; only temp decrypted
+# copies (written to /tmp by agenix) are never in the repo.
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor swap/backup files
+*.swp
+*.swo
+*~
