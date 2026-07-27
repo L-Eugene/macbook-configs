@@ -195,11 +195,13 @@ casks = [
 
 **From the Marketplace** (via `nix-vscode-extensions`):
 
+Add the extension to the `marketplaceExts` list in `home/default.nix`:
+
 ```nix
-++ (with marketplace; [
-  ...
+marketplaceExts = with marketplace; [
+  github.codespaces
   publisher.extension-name   # exactly as it appears in the Marketplace URL
-])
+];
 ```
 
 ### Changing macOS system defaults
