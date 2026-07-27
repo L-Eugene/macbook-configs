@@ -308,4 +308,4 @@ sudo nix-collect-garbage --delete-older-than 30d
 
 ## License
 
-[MIT](LICENSE)
+[Unlicense](LICENSE)

@@ -73,6 +73,7 @@
       darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
         inherit system specialArgs;
         modules = [
+          ./modules/host.nix
           ./modules/system.nix
           ./modules/apps.nix
           ./modules/homebrew.nix
@@ -82,22 +83,7 @@
 
           # home-manager integration
           home-manager.darwinModules.home-manager
-          {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              extraSpecialArgs = specialArgs;
-              users.${username} = import ./home/default.nix;
-            };
-          }
-
-          # Inline host settings that need the outer scope
-          {
-            networking.hostName = hostname;
-            users.users.${username} = {
-              home = "/Users/${username}";
-            };
-          }
+          ./modules/home-manager.nix
         ];
       };
 
