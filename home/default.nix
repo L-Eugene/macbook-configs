@@ -98,23 +98,11 @@ in
   #   • Dev Containers                  (ms-vscode-remote.remote-containers)
   #   • Power Platform Tools            (microsoft-IsvExpTools.powerplatform-vscode)
   #   • Remote - SSH                    (ms-vscode-remote.remote-ssh)
-  #
-  # Additional extensions pulled in automatically as dependencies of
-  # powerplatform-vscode (e.g. remote editing helpers) are satisfied by the
-  # marketplace mirror overlay.
   # ---------------------------------------------------------------------------
-  programs.vscode = {
-    enable = true;
-    package = pkgs.vscode;
-
-    # mutableExtensionsDir = false enforces that ONLY the extensions declared
-    # here are active, making the config fully reproducible.
-    mutableExtensionsDir = false;
-
-    extensions =
-      (with pkgs.vscode-extensions; [
-        # ── Available in nixpkgs directly ───────────────────────────────────
-
+  programs.vscode =
+    let
+      # Extensions available directly in nixpkgs
+      nixpkgsExts = with pkgs.vscode-extensions; [
         # Remote – SSH (connect to remote machines over SSH)
         ms-vscode-remote.remote-ssh
 
@@ -123,62 +111,72 @@ in
 
         # GitHub Pull Requests and Issues
         github.vscode-pull-request-github
-      ])
-      ++ (with marketplace; [
-        # ── From the VSCode Marketplace (via nix-vscode-extensions) ─────────
+      ];
 
+      # Extensions from the VSCode Marketplace (via nix-vscode-extensions).
+      # nix-vscode-extensions lowercases all publisher IDs, so
+      # "microsoft-IsvExpTools" → "microsoft-isvexptools".
+      marketplaceExts = with marketplace; [
         # GitHub Codespaces
         github.codespaces
 
         # Power Platform Tools (includes all its bundled dependencies)
-        # Note: nix-vscode-extensions lowercases all publisher IDs.
-        # The Marketplace ID is "microsoft-IsvExpTools.powerplatform-vscode".
         microsoft-isvexptools.powerplatform-vscode
-      ]);
-
-    userSettings = {
-      # Editor
-      "editor.fontFamily" = "'JetBrainsMono Nerd Font', Menlo, Monaco, 'Courier New', monospace";
-      "editor.fontSize" = 14;
-      "editor.lineHeight" = 1.5;
-      "editor.formatOnSave" = true;
-      "editor.formatOnPaste" = false;
-      "editor.rulers" = [
-        80
-        120
       ];
-      "editor.minimap.enabled" = false;
-      "editor.renderWhitespace" = "boundary";
-      "editor.tabSize" = 2;
-      "editor.bracketPairColorization.enabled" = true;
-      "editor.guides.bracketPairs" = "active";
+    in
+    {
+      enable = true;
+      package = pkgs.vscode;
 
-      # Workbench
-      "workbench.startupEditor" = "none";
-      "workbench.colorTheme" = "Default Dark Modern";
+      # mutableExtensionsDir = false enforces that ONLY the extensions declared
+      # here are active, making the config fully reproducible.
+      mutableExtensionsDir = false;
 
-      # Files
-      "files.autoSave" = "onFocusChange";
-      "files.trimTrailingWhitespace" = true;
-      "files.insertFinalNewline" = true;
+      extensions = nixpkgsExts ++ marketplaceExts;
 
-      # Terminal
-      "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font Mono'";
-      "terminal.integrated.fontSize" = 13;
+      userSettings = {
+        # Editor
+        "editor.fontFamily" = "'JetBrainsMono Nerd Font', Menlo, Monaco, 'Courier New', monospace";
+        "editor.fontSize" = 14;
+        "editor.lineHeight" = 1.5;
+        "editor.formatOnSave" = true;
+        "editor.formatOnPaste" = false;
+        "editor.rulers" = [
+          80
+          120
+        ];
+        "editor.minimap.enabled" = false;
+        "editor.renderWhitespace" = "boundary";
+        "editor.tabSize" = 2;
+        "editor.bracketPairColorization.enabled" = true;
+        "editor.guides.bracketPairs" = "active";
 
-      # Git
-      "git.autofetch" = true;
-      "git.confirmSync" = false;
+        # Workbench
+        "workbench.startupEditor" = "none";
+        "workbench.colorTheme" = "Default Dark Modern";
 
-      # Security – trust workspaces you explicitly open
-      "security.workspace.trust.enabled" = true;
-      "security.workspace.trust.untrustedFiles" = "prompt";
+        # Files
+        "files.autoSave" = "onFocusChange";
+        "files.trimTrailingWhitespace" = true;
+        "files.insertFinalNewline" = true;
 
-      # Nix
-      "nix.enableLanguageServer" = true;
-      "nix.serverPath" = "nil";
+        # Terminal
+        "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font Mono'";
+        "terminal.integrated.fontSize" = 13;
+
+        # Git
+        "git.autofetch" = true;
+        "git.confirmSync" = false;
+
+        # Security – trust workspaces you explicitly open
+        "security.workspace.trust.enabled" = true;
+        "security.workspace.trust.untrustedFiles" = "prompt";
+
+        # Nix
+        "nix.enableLanguageServer" = true;
+        "nix.serverPath" = "nil";
+      };
     };
-  };
 
   # ---------------------------------------------------------------------------
   # Syncthing – user-level continuous file synchronisation
