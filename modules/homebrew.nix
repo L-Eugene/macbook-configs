@@ -1,0 +1,59 @@
+# Homebrew casks and brews
+# nix-darwin's homebrew module manages the lifecycle of Homebrew itself as
+# well as all formulae and casks declared here.
+#
+# IMPORTANT: Homebrew must already be installed before running `darwin-rebuild`.
+# Install it with: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+{
+  pkgs,
+  lib,
+  ...
+}:
+
+{
+  homebrew = {
+    enable = true;
+
+    # Lifecycle management
+    onActivation = {
+      autoUpdate = true; # Run `brew update` on every activation
+      upgrade = true; # Upgrade out-of-date casks/formulae
+      # "zap" removes any installed cask/formula NOT listed here.
+      # Use "uninstall" if you want softer cleanup (keeps manually-installed packages).
+      cleanup = "zap";
+    };
+
+    # Additional Homebrew taps
+    taps = [ ];
+
+    # Homebrew formulae (CLI packages)
+    brews = [ ];
+
+    # Homebrew Casks (GUI applications)
+    casks = [
+      # Web browser – set as default browser via activation script below
+      "firefox"
+
+      # Password manager (KeePassXC is the actively-maintained successor to KeePassX)
+      "keepassxc"
+    ];
+
+    # Mac App Store applications (requires prior App Store sign-in)
+    # masApps = { "1Password" = 1333542190; };
+    masApps = { };
+  };
+
+  # ---------------------------------------------------------------------------
+  # Set Firefox as the default browser.
+  #
+  # postUserActivation runs as the logged-in user, which is required for
+  # macOS to accept the LaunchServices default-browser change.
+  # defaultbrowser(1) shows a one-time system confirmation dialog on first run;
+  # subsequent runs are silent.
+  # ---------------------------------------------------------------------------
+  system.activationScripts.postUserActivation.text = lib.mkAfter ''
+    echo "Setting Firefox as the default browser…"
+    ${pkgs.defaultbrowser}/bin/defaultbrowser firefox \
+      || echo "  defaultbrowser: dialog may be pending user approval."
+  '';
+}
