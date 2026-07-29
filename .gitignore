@@ -22,3 +22,5 @@ result-*
 *.swp
 *.swo
 *~
+
+*.lock
