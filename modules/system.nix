@@ -38,6 +38,7 @@
     NSGlobalDomain = {
       ApplePressAndHoldEnabled = false; # Enable key repeat
       AppleShowAllExtensions = true;
+      "com.apple.swipescrolldirection" = false; # Disable natural scrolling
       InitialKeyRepeat = 15; # Delay before key repeat starts (lower = faster)
       KeyRepeat = 2; # Key repeat rate (lower = faster)
       NSAutomaticCapitalizationEnabled = false;
