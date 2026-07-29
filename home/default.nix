@@ -2,6 +2,7 @@
 {
   pkgs,
   username,
+  configRepoPath,
   nix-vscode-extensions,
   system,
   ...
@@ -58,7 +59,7 @@ in
       grep = "rg";
       find = "fd";
       # Rebuild and switch the Darwin configuration
-      darwin-switch = "darwin-rebuild switch --flake ~/.config/nixpkgs";
+      darwin-switch = "sudo darwin-rebuild switch --flake \"${configRepoPath}\"";
     };
 
     initContent = ''

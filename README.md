@@ -70,10 +70,18 @@ git clone https://github.com/L-Eugene/macbook-configs.git ~/.config/nixpkgs
 cd ~/.config/nixpkgs
 ```
 
+If you use a different checkout path, set it once in your shell:
+
+```sh
+export CONFIG_REPO_PATH="$HOME/.config/nixpkgs"
+```
+
+If you keep the default location above, `CONFIG_REPO_PATH` is effectively
+`~/.config/nixpkgs`.
+
 ### 2. Personalise the configuration
 
-Open `flake.nix` and edit the three values near the top of the `outputs`
-section:
+Open `flake.nix` and edit the values near the top of the `outputs` section:
 
 ```nix
 # "aarch64-darwin" for Apple Silicon  |  "x86_64-darwin" for Intel
@@ -84,6 +92,9 @@ username = "changeme";
 
 # Machine hostname (System Preferences → Sharing → Computer Name)
 hostname = "macbook";
+
+# Path where this repository is cloned on your machine
+configRepoPath = "~/.config/nixpkgs";
 ```
 
 Optionally fill in `home/default.nix` with your Git identity:
@@ -102,7 +113,7 @@ Initial system activation must be run as `root`.
 If `darwin-rebuild` is not yet in your `PATH`:
 
 ```sh
-sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nixpkgs
+sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 ### 4. Apply the configuration
@@ -110,7 +121,7 @@ sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experi
 On every subsequent change:
 
 ```sh
-darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake ~/.config/nixpkgs
+sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 Or use the shell alias set up by this config:
@@ -131,14 +142,14 @@ darwin-switch
 
 ```sh
 nix --extra-experimental-features nix-command --extra-experimental-features flakes flake update
-darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake ~/.config/nixpkgs
+sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 ### Update a single input (e.g. nixpkgs only)
 
 ```sh
 nix --extra-experimental-features nix-command --extra-experimental-features flakes flake lock --update-input nixpkgs
-darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake ~/.config/nixpkgs
+sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 ---
@@ -299,7 +310,7 @@ sudo nix-collect-garbage --delete-older-than 30d
 
 | Problem | Solution |
 |---|---|
-| `darwin-rebuild: command not found` | Run `nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nixpkgs` |
+| `darwin-rebuild: command not found` | Run `sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"` |
 | Homebrew cask not found | Run `brew update` then retry `darwin-rebuild switch` |
 | VSCode extension missing | Check the publisher/name against the [Marketplace](https://marketplace.visualstudio.com/) and ensure `nix flake update` was run |
 | Default browser dialog never appeared | Run `defaultbrowser firefox` manually in your terminal |

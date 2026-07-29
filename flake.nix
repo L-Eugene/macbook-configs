@@ -53,6 +53,9 @@
       # Machine hostname (System Preferences → Sharing → Computer Name).
       hostname = "macbook";
 
+      # Path to this flake repository on your machine.
+      configRepoPath = "~/.config/nixpkgs";
+
       # -----------------------------------------------------------------------
 
       pkgs = nixpkgs.legacyPackages.${system};
@@ -61,6 +64,7 @@
         inherit
           username
           hostname
+          configRepoPath
           nix-vscode-extensions
           agenix
           system
