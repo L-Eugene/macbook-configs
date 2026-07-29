@@ -27,8 +27,8 @@ in
   programs.git = {
     enable = true;
     # Fill in your identity; or override per-repo with git config
-    # userName  = "Your Name";
-    # userEmail = "you@example.com";
+    # settings.user.name = "Your Name";
+    # settings.user.email = "you@example.com";
     settings = {
       init.defaultBranch = "main";
       pull.rebase = true;
@@ -61,7 +61,7 @@ in
       darwin-switch = "darwin-rebuild switch --flake ~/.config/nixpkgs";
     };
 
-    initExtra = ''
+    initContent = ''
       # Starship prompt
       eval "$(starship init zsh)"
       # direnv hook

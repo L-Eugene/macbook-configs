@@ -9,9 +9,10 @@
 {
   # Allow only explicitly-approved unfree packages.
   nixpkgs.config.allowUnfreePredicate = pkg:
-    builtins.elem (lib.getName pkg) [
-      "vscode"
-    ];
+    let
+      name = lib.getName pkg;
+    in
+    name == "vscode" || lib.hasPrefix "vscode-extension-" name;
 
   # ---------------------------------------------------------------------------
   # macOS system defaults
