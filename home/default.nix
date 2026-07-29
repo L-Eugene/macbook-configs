@@ -59,7 +59,7 @@ in
       grep = "rg";
       find = "fd";
       # Rebuild and switch the Darwin configuration
-      darwin-switch = "sudo darwin-rebuild switch --flake \"${configRepoPath}\"";
+      darwin-switch = "sudo darwin-rebuild switch --flake ${configRepoPath}";
     };
 
     initContent = ''
