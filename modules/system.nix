@@ -1,18 +1,13 @@
 # macOS system-level configuration via nix-darwin
 {
-  lib,
   pkgs,
   username,
   ...
 }:
 
 {
-  # Allow only explicitly-approved unfree packages.
-  nixpkgs.config.allowUnfreePredicate = pkg:
-    let
-      name = lib.getName pkg;
-    in
-    name == "vscode" || lib.hasPrefix "vscode-extension-" name;
+  # Allow unfree packages (required for VSCode + several VSCode extensions).
+  nixpkgs.config.allowUnfree = true;
 
   # ---------------------------------------------------------------------------
   # macOS system defaults
