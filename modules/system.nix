@@ -76,13 +76,14 @@
   # ---------------------------------------------------------------------------
 
   # Enable Touch ID authentication for sudo
-  security.pam.enableSudoTouchIdAuth = true;
+  security.pam.services.sudo_local.touchIdAuth = true;
+
+  # nix-darwin now applies user-scoped defaults for this account.
+  system.primaryUser = username;
 
   # ---------------------------------------------------------------------------
-  # Nix daemon & settings
+  # Nix settings
   # ---------------------------------------------------------------------------
-
-  services.nix-daemon.enable = true;
 
   nix = {
     settings = {

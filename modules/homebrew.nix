@@ -5,6 +5,7 @@
 # IMPORTANT: Homebrew must already be installed before running `darwin-rebuild`.
 # Install it with: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 {
+  username,
   pkgs,
   lib,
   ...
@@ -46,14 +47,13 @@
   # ---------------------------------------------------------------------------
   # Set Firefox as the default browser.
   #
-  # postUserActivation runs as the logged-in user, which is required for
-  # macOS to accept the LaunchServices default-browser change.
+  # Activation now runs as root in nix-darwin, so execute as the primary user.
   # defaultbrowser(1) shows a one-time system confirmation dialog on first run;
   # subsequent runs are silent.
   # ---------------------------------------------------------------------------
-  system.activationScripts.postUserActivation.text = lib.mkAfter ''
+  system.activationScripts.postActivation.text = lib.mkAfter ''
     echo "Setting Firefox as the default browser…"
-    ${pkgs.defaultbrowser}/bin/defaultbrowser firefox \
+    sudo -u ${username} ${pkgs.defaultbrowser}/bin/defaultbrowser firefox \
       || echo "  defaultbrowser: dialog may be pending user approval."
   '';
 }

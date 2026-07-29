@@ -97,10 +97,12 @@ programs.git = {
 
 ### 3. Bootstrap nix-darwin (first run only)
 
+Initial system activation must be run as `root`.
+
 If `darwin-rebuild` is not yet in your `PATH`:
 
 ```sh
-nix run nix-darwin -- switch --flake ~/.config/nixpkgs
+sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nixpkgs
 ```
 
 ### 4. Apply the configuration
@@ -108,7 +110,7 @@ nix run nix-darwin -- switch --flake ~/.config/nixpkgs
 On every subsequent change:
 
 ```sh
-darwin-rebuild switch --flake ~/.config/nixpkgs
+darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake ~/.config/nixpkgs
 ```
 
 Or use the shell alias set up by this config:
@@ -128,15 +130,15 @@ darwin-switch
 ### Update all flake inputs
 
 ```sh
-nix flake update
-darwin-rebuild switch --flake ~/.config/nixpkgs
+nix --extra-experimental-features nix-command --extra-experimental-features flakes flake update
+darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake ~/.config/nixpkgs
 ```
 
 ### Update a single input (e.g. nixpkgs only)
 
 ```sh
-nix flake lock --update-input nixpkgs
-darwin-rebuild switch --flake ~/.config/nixpkgs
+nix --extra-experimental-features nix-command --extra-experimental-features flakes flake lock --update-input nixpkgs
+darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake ~/.config/nixpkgs
 ```
 
 ---
@@ -236,7 +238,7 @@ in {
 
 ```sh
 # From the repository root:
-nix run .#agenix -- -e secrets/my-secret.age
+nix --extra-experimental-features nix-command --extra-experimental-features flakes run .#agenix -- -e secrets/my-secret.age
 ```
 
 Your `$EDITOR` opens with a temporary decrypted file.  Save and quit — agenix
@@ -263,7 +265,7 @@ re-encrypts and writes the `.age` file.
 #### 4. Re-key all secrets (after adding a new SSH key)
 
 ```sh
-nix run .#agenix -- -r -i ~/.ssh/id_ed25519
+nix --extra-experimental-features nix-command --extra-experimental-features flakes run .#agenix -- -r -i ~/.ssh/id_ed25519
 ```
 
 ### Security best practices
@@ -297,7 +299,7 @@ sudo nix-collect-garbage --delete-older-than 30d
 
 | Problem | Solution |
 |---|---|
-| `darwin-rebuild: command not found` | Run `nix run nix-darwin -- switch --flake ~/.config/nixpkgs` |
+| `darwin-rebuild: command not found` | Run `nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nixpkgs` |
 | Homebrew cask not found | Run `brew update` then retry `darwin-rebuild switch` |
 | VSCode extension missing | Check the publisher/name against the [Marketplace](https://marketplace.visualstudio.com/) and ensure `nix flake update` was run |
 | Default browser dialog never appeared | Run `defaultbrowser firefox` manually in your terminal |
