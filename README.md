@@ -188,7 +188,7 @@ casks = [
 **From nixpkgs** (see `pkgs.vscode-extensions.*`):
 
 ```nix
-# home/default.nix – programs.vscode.extensions
+# home/default.nix – programs.vscode.profiles.default.extensions
 (with pkgs.vscode-extensions; [
   ...
   publisher.extension-name

@@ -37,7 +37,7 @@
       # ---------------------------------------------------------------------------
       # Development tools
       # ---------------------------------------------------------------------------
-      nixfmt-rfc-style # Nix code formatter
+      nixfmt # Nix code formatter
       nil # Nix language server (LSP)
       shellcheck # Shell script linter
       pre-commit # Git hook framework

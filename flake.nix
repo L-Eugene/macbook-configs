@@ -91,6 +91,6 @@
       packages.${system}.agenix = agenix.packages.${system}.agenix;
 
       # Convenience: `nix fmt` formats all Nix files with nixfmt
-      formatter.${system} = pkgs.nixfmt-rfc-style;
+      formatter.${system} = pkgs.nixfmt;
     };
 }

@@ -29,7 +29,7 @@ in
     # Fill in your identity; or override per-repo with git config
     # userName  = "Your Name";
     # userEmail = "you@example.com";
-    extraConfig = {
+    settings = {
       init.defaultBranch = "main";
       pull.rebase = true;
       push.autoSetupRemote = true;
@@ -132,49 +132,51 @@ in
       # here are active, making the config fully reproducible.
       mutableExtensionsDir = false;
 
-      extensions = nixpkgsExts ++ marketplaceExts;
+      profiles.default = {
+        extensions = nixpkgsExts ++ marketplaceExts;
 
-      userSettings = {
-        # Editor
-        "editor.fontFamily" = "'JetBrainsMono Nerd Font', Menlo, Monaco, 'Courier New', monospace";
-        "editor.fontSize" = 14;
-        "editor.lineHeight" = 1.5;
-        "editor.formatOnSave" = true;
-        "editor.formatOnPaste" = false;
-        "editor.rulers" = [
-          80
-          120
-        ];
-        "editor.minimap.enabled" = false;
-        "editor.renderWhitespace" = "boundary";
-        "editor.tabSize" = 2;
-        "editor.bracketPairColorization.enabled" = true;
-        "editor.guides.bracketPairs" = "active";
+        userSettings = {
+          # Editor
+          "editor.fontFamily" = "'JetBrainsMono Nerd Font', Menlo, Monaco, 'Courier New', monospace";
+          "editor.fontSize" = 14;
+          "editor.lineHeight" = 1.5;
+          "editor.formatOnSave" = true;
+          "editor.formatOnPaste" = false;
+          "editor.rulers" = [
+            80
+            120
+          ];
+          "editor.minimap.enabled" = false;
+          "editor.renderWhitespace" = "boundary";
+          "editor.tabSize" = 2;
+          "editor.bracketPairColorization.enabled" = true;
+          "editor.guides.bracketPairs" = "active";
 
-        # Workbench
-        "workbench.startupEditor" = "none";
-        "workbench.colorTheme" = "Default Dark Modern";
+          # Workbench
+          "workbench.startupEditor" = "none";
+          "workbench.colorTheme" = "Default Dark Modern";
 
-        # Files
-        "files.autoSave" = "onFocusChange";
-        "files.trimTrailingWhitespace" = true;
-        "files.insertFinalNewline" = true;
+          # Files
+          "files.autoSave" = "onFocusChange";
+          "files.trimTrailingWhitespace" = true;
+          "files.insertFinalNewline" = true;
 
-        # Terminal
-        "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font Mono'";
-        "terminal.integrated.fontSize" = 13;
+          # Terminal
+          "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font Mono'";
+          "terminal.integrated.fontSize" = 13;
 
-        # Git
-        "git.autofetch" = true;
-        "git.confirmSync" = false;
+          # Git
+          "git.autofetch" = true;
+          "git.confirmSync" = false;
 
-        # Security – trust workspaces you explicitly open
-        "security.workspace.trust.enabled" = true;
-        "security.workspace.trust.untrustedFiles" = "prompt";
+          # Security – trust workspaces you explicitly open
+          "security.workspace.trust.enabled" = true;
+          "security.workspace.trust.untrustedFiles" = "prompt";
 
-        # Nix
-        "nix.enableLanguageServer" = true;
-        "nix.serverPath" = "nil";
+          # Nix
+          "nix.enableLanguageServer" = true;
+          "nix.serverPath" = "nil";
+        };
       };
     };
 
@@ -190,11 +192,11 @@ in
   # ---------------------------------------------------------------------------
   programs.ssh = {
     enable = true;
-    addKeysToAgent = "yes";
-    extraConfig = ''
-      # macOS Keychain integration
-      UseKeychain yes
-    '';
+    enableDefaultConfig = false;
+    settings."*" = {
+      AddKeysToAgent = "yes";
+      UseKeychain = "yes";
+    };
   };
 
   # ---------------------------------------------------------------------------
