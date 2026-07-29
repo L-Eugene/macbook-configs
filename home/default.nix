@@ -12,6 +12,8 @@ let
   marketplace = nix-vscode-extensions.extensions.${system}.vscode-marketplace;
 in
 {
+  nixpkgs.config.allowUnfree = true;
+
   home.username = username;
   home.homeDirectory = "/Users/${username}";
 

@@ -10,6 +10,11 @@ in
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;
+    sharedModules = [
+      {
+        nixpkgs.config.allowUnfree = true;
+      }
+    ];
     extraSpecialArgs = specialArgs;
     users.${username} = import ../home/default.nix;
   };
