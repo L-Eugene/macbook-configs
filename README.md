@@ -14,10 +14,10 @@ Secrets are encrypted at rest using [agenix](https://github.com/ryantm/agenix).
 | **Firefox** | Homebrew Cask | Set as the default browser automatically |
 | **Visual Studio Code** | nixpkgs | Extensions managed by Nix |
 | ↳ GitHub Pull Requests & Issues | nix-vscode-extensions | |
-| ↳ GitHub Codespaces | nix-vscode-extensions | |
-| ↳ Dev Containers | nix-vscode-extensions | |
-| ↳ Power Platform Tools (+ deps) | nix-vscode-extensions | |
-| ↳ Remote - SSH | nixpkgs | |
+| ↳ Dev Containers | VSCode Marketplace (manual install) | Proprietary/unfree |
+| ↳ GitHub Codespaces | VSCode Marketplace (manual install) | Proprietary/unfree |
+| ↳ Power Platform Tools (+ deps) | VSCode Marketplace (manual install) | Proprietary/unfree |
+| ↳ Remote - SSH | VSCode Marketplace (manual install) | Proprietary/unfree |
 | **Syncthing** | nixpkgs (launchd service) | Web UI on http://127.0.0.1:8384 |
 | **KeePassXC** | Homebrew Cask | Actively-maintained successor to KeePassX |
 

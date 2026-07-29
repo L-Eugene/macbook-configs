@@ -96,21 +96,14 @@ in
   #
   # Extensions installed via nix-vscode-extensions (full Marketplace mirror):
   #   • GitHub Pull Request and Issues  (github.vscode-pull-request-github)
-  #   • GitHub Codespaces               (github.codespaces)
-  #   • Dev Containers                  (ms-vscode-remote.remote-containers)
-  #   • Power Platform Tools            (microsoft-IsvExpTools.powerplatform-vscode)
-  #   • Remote - SSH                    (ms-vscode-remote.remote-ssh)
+  #
+  # NOTE: Some proprietary extensions are intentionally installed manually
+  # from VSCode UI to avoid nixpkgs unfree-evaluation failures.
   # ---------------------------------------------------------------------------
   programs.vscode =
     let
       # Extensions available directly in nixpkgs
       nixpkgsExts = with pkgs.vscode-extensions; [
-        # Remote – SSH (connect to remote machines over SSH)
-        ms-vscode-remote.remote-ssh
-
-        # Dev Containers (open folders inside Docker containers)
-        ms-vscode-remote.remote-containers
-
         # GitHub Pull Requests and Issues
         github.vscode-pull-request-github
       ];
@@ -118,13 +111,7 @@ in
       # Extensions from the VSCode Marketplace (via nix-vscode-extensions).
       # nix-vscode-extensions lowercases all publisher IDs, so
       # "microsoft-IsvExpTools" → "microsoft-isvexptools".
-      marketplaceExts = with marketplace; [
-        # GitHub Codespaces
-        github.codespaces
-
-        # Power Platform Tools (includes all its bundled dependencies)
-        microsoft-isvexptools.powerplatform-vscode
-      ];
+      marketplaceExts = [ ];
     in
     {
       enable = true;
