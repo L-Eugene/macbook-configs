@@ -12,13 +12,8 @@ Secrets are encrypted at rest using [agenix](https://github.com/ryantm/agenix).
 | Software | How | Notes |
 |---|---|---|
 | **Firefox** | Homebrew Cask | Set as the default browser automatically |
-| **Visual Studio Code** | nixpkgs | Extensions managed by Nix |
-| ↳ GitHub Pull Requests & Issues | nix-vscode-extensions | |
-| ↳ Dev Containers | VSCode Marketplace (manual install) | Proprietary/unfree |
-| ↳ GitHub Codespaces | VSCode Marketplace (manual install) | Proprietary/unfree |
-| ↳ Power Platform Tools (+ deps) | VSCode Marketplace (manual install) | Proprietary/unfree |
-| ↳ Remote - SSH | VSCode Marketplace (manual install) | Proprietary/unfree |
-| **Syncthing** | nixpkgs (launchd service) | Web UI on http://127.0.0.1:8384 |
+| **Visual Studio Code** | Homebrew Cask | `settings.json` managed via home-manager activation; extensions installed manually |
+| **Syncthing** | home-manager (launchd service) | Web UI on http://127.0.0.1:8384 |
 | **KeePassXC** | Homebrew Cask | Actively-maintained successor to KeePassX |
 
 > **Note on KeePassX vs KeePassXC:** KeePassX is no longer actively
@@ -100,9 +95,9 @@ configRepoPath = "~/.config/nixpkgs";
 Optionally fill in `home/default.nix` with your Git identity:
 
 ```nix
-programs.git = {
-  userName  = "Your Name";
-  userEmail = "you@example.com";
+programs.git.settings.user = {
+  name  = "Your Name";
+  email = "you@example.com";
 };
 ```
 
@@ -158,15 +153,18 @@ sudo darwin-rebuild --extra-experimental-features nix-command --extra-experiment
 
 ```
 ~/.config/nixpkgs/
-├── flake.nix            ← top-level inputs, system/username/hostname
+├── flake.nix                   ← top-level inputs, system/username/hostname
 ├── modules/
-│   ├── system.nix       ← macOS system defaults (Dock, Finder, keyboard…)
-│   ├── apps.nix         ← system-level Nix packages + Syncthing service
-│   └── homebrew.nix     ← Homebrew casks (Firefox, KeePassXC) + cleanup
+│   ├── config_host.nix         ← hostname + primary user account
+│   ├── config_home-manager.nix ← home-manager integration
+│   ├── system.nix              ← macOS system defaults + agenix secrets
+│   ├── apps.nix                ← system-level Nix packages + fonts
+│   └── homebrew.nix            ← Homebrew casks (Firefox, KeePassXC, VSCode) + cleanup
 ├── home/
-│   └── default.nix      ← per-user config: VSCode, Git, Zsh, SSH…
+│   └── default.nix             ← per-user config: Git, Zsh, VSCode settings, SSH, Syncthing…
 └── secrets/
-    └── secrets.nix      ← agenix secret declarations
+    ├── secrets.nix             ← agenix recipient declarations
+    └── *.age                   ← encrypted secrets (safe to commit)
 ```
 
 ### Adding a new package (Nix)
@@ -190,32 +188,19 @@ Add the cask name to `modules/homebrew.nix`:
 casks = [
   "firefox"
   "keepassxc"
+  "visual-studio-code"
   "your-new-cask"   # ← add here
 ];
 ```
 
-### Adding a VSCode extension
+### Changing VSCode settings
 
-**From nixpkgs** (see `pkgs.vscode-extensions.*`):
-
-```nix
-# home/default.nix – programs.vscode.profiles.default.extensions
-(with pkgs.vscode-extensions; [
-  ...
-  publisher.extension-name
-])
-```
-
-**From the Marketplace** (via `nix-vscode-extensions`):
-
-Add the extension to the `marketplaceExts` list in `home/default.nix`:
-
-```nix
-marketplaceExts = with marketplace; [
-  github.codespaces
-  publisher.extension-name   # exactly as it appears in the Marketplace URL
-];
-```
+VSCode is installed as a Homebrew cask; its extensions are **not** managed by
+Nix (install them from within VSCode as usual). The `settings.json` keys are
+merged in on each activation by the `home.activation.vscodeSettings` script in
+`home/default.nix` — edit the `managedSettings` attribute set there to add or
+change a managed key. Any keys you edit in the VSCode UI that are not managed
+by that script are preserved.
 
 ### Changing macOS system defaults
 
@@ -237,7 +222,8 @@ corresponding private key(s) can decrypt them.
 
 ```nix
 let
-  machineKey = builtins.readFile /Users/you/.ssh/id_ed25519.pub;
+  # Reads the current user's public key at eval time (agenix runs on the Mac).
+  machineKey = builtins.readFile "${builtins.getEnv "HOME"}/.ssh/id_ed25519.pub";
   # or inline the key string directly:
   # machineKey = "ssh-ed25519 AAAA... you@macbook";
 in {
@@ -247,9 +233,13 @@ in {
 
 #### 2. Create or edit a secret
 
+agenix looks for `secrets.nix` in the current directory and uses the filename
+you pass as the lookup key, so run it from **inside** `secrets/` with the bare
+filename (no `secrets/` prefix):
+
 ```sh
-# From the repository root:
-nix --extra-experimental-features nix-command --extra-experimental-features flakes run .#agenix -- -e secrets/my-secret.age
+cd secrets
+nix --extra-experimental-features nix-command --extra-experimental-features flakes run "$(git rev-parse --show-toplevel)#agenix" -- -e my-secret.age
 ```
 
 Your `$EDITOR` opens with a temporary decrypted file.  Save and quit — agenix
@@ -276,7 +266,8 @@ re-encrypts and writes the `.age` file.
 #### 4. Re-key all secrets (after adding a new SSH key)
 
 ```sh
-nix --extra-experimental-features nix-command --extra-experimental-features flakes run .#agenix -- -r -i ~/.ssh/id_ed25519
+cd secrets
+nix --extra-experimental-features nix-command --extra-experimental-features flakes run "$(git rev-parse --show-toplevel)#agenix" -- -r -i ~/.ssh/id_ed25519
 ```
 
 ### Security best practices
