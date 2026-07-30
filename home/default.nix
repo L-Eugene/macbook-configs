@@ -1,17 +1,11 @@
 # home-manager configuration for the primary user
 {
   pkgs,
+  lib,
   username,
   configRepoPath,
-  nix-vscode-extensions,
-  system,
   ...
 }:
-
-let
-  # All VSCode Marketplace extensions, pinned by nix-vscode-extensions
-  marketplace = nix-vscode-extensions.extensions.${system}.vscode-marketplace;
-in
 {
   home.username = username;
   home.homeDirectory = "/Users/${username}";
@@ -91,71 +85,69 @@ in
   };
 
   # ---------------------------------------------------------------------------
-  # Visual Studio Code – app installed via Homebrew Cask, settings via Nix.
+  # Visual Studio Code – app installed via Homebrew Cask (see homebrew.nix).
+  #
+  # settings.json is a plain, writable file (not a Nix symlink) so VSCode and
+  # the user can keep editing it. On each activation the keys declared below
+  # are merged in via jq; any other keys already present are preserved.
   # ---------------------------------------------------------------------------
-  programs.vscode =
+  home.activation.vscodeSettings =
     let
-      # Overrides the default pkgs.vscode (unfree) with a stub pointing to the
-      # Homebrew-installed binary; home-manager still writes settings.json.
-      vscodeStub = pkgs.writeShellScriptBin "code" ''
-        exec "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" "$@"
-      '';
-    in
-    {
-      enable = true;
-      package = vscodeStub;
+      managedSettings = (pkgs.formats.json { }).generate "vscode-settings.json" {
+        # Editor
+        "editor.fontFamily" = "'JetBrainsMono Nerd Font', Menlo, Monaco, 'Courier New', monospace";
+        "editor.fontSize" = 14;
+        "editor.lineHeight" = 1.5;
+        "editor.formatOnSave" = true;
+        "editor.formatOnPaste" = false;
+        "editor.rulers" = [ 80 120 ];
+        "editor.minimap.enabled" = false;
+        "editor.renderWhitespace" = "boundary";
+        "editor.tabSize" = 2;
+        "editor.bracketPairColorization.enabled" = true;
+        "editor.guides.bracketPairs" = "active";
 
-      # Extensions are managed manually via the UI; declaring any here causes
-      # home-manager to write .extensions-immutable.json which fails when VSCode
-      # is installed by Homebrew and owns the extensions directory.
-      mutableExtensionsDir = true;
+        # Workbench
+        "workbench.startupEditor" = "none";
+        "workbench.colorTheme" = "Default Dark Modern";
 
-      profiles.default = {
+        # Files
+        "files.autoSave" = "onFocusChange";
+        "files.trimTrailingWhitespace" = true;
+        "files.insertFinalNewline" = true;
 
-        userSettings = {
-          # Editor
-          "editor.fontFamily" = "'JetBrainsMono Nerd Font', Menlo, Monaco, 'Courier New', monospace";
-          "editor.fontSize" = 14;
-          "editor.lineHeight" = 1.5;
-          "editor.formatOnSave" = true;
-          "editor.formatOnPaste" = false;
-          "editor.rulers" = [
-            80
-            120
-          ];
-          "editor.minimap.enabled" = false;
-          "editor.renderWhitespace" = "boundary";
-          "editor.tabSize" = 2;
-          "editor.bracketPairColorization.enabled" = true;
-          "editor.guides.bracketPairs" = "active";
+        # Terminal
+        "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font Mono'";
+        "terminal.integrated.fontSize" = 13;
 
-          # Workbench
-          "workbench.startupEditor" = "none";
-          "workbench.colorTheme" = "Default Dark Modern";
+        # Git
+        "git.autofetch" = true;
+        "git.confirmSync" = false;
 
-          # Files
-          "files.autoSave" = "onFocusChange";
-          "files.trimTrailingWhitespace" = true;
-          "files.insertFinalNewline" = true;
+        # Security
+        "security.workspace.trust.enabled" = true;
+        "security.workspace.trust.untrustedFiles" = "prompt";
 
-          # Terminal
-          "terminal.integrated.fontFamily" = "'JetBrainsMono Nerd Font Mono'";
-          "terminal.integrated.fontSize" = 13;
-
-          # Git
-          "git.autofetch" = true;
-          "git.confirmSync" = false;
-
-          # Security – trust workspaces you explicitly open
-          "security.workspace.trust.enabled" = true;
-          "security.workspace.trust.untrustedFiles" = "prompt";
-
-          # Nix
-          "nix.enableLanguageServer" = true;
-          "nix.serverPath" = "nil";
-        };
+        # Nix
+        "nix.enableLanguageServer" = true;
+        "nix.serverPath" = "nil";
       };
-    };
+    in
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      settingsDir="$HOME/Library/Application Support/Code/User"
+      settingsPath="$settingsDir/settings.json"
+      $DRY_RUN_CMD mkdir -p "$settingsDir"
+
+      tmpFile="$(mktemp)"
+      if [ -s "$settingsPath" ]; then
+        # Deep-merge: our managed keys win, everything else is kept.
+        ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$settingsPath" ${managedSettings} > "$tmpFile"
+      else
+        cp ${managedSettings} "$tmpFile"
+      fi
+      $DRY_RUN_CMD install -m 0644 "$tmpFile" "$settingsPath"
+      rm -f "$tmpFile"
+    '';
 
   # ---------------------------------------------------------------------------
   # Syncthing – user-level continuous file synchronisation
