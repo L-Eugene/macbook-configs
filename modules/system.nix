@@ -1,6 +1,7 @@
 # macOS system-level configuration via nix-darwin
 {
   pkgs,
+  lib,
   username,
   ...
 }:
@@ -8,6 +9,28 @@
 {
   # Allow unfree packages (required for VSCode + several VSCode extensions).
   nixpkgs.config.allowUnfree = true;
+
+  # ---------------------------------------------------------------------------
+  # Secrets (agenix)
+  # ---------------------------------------------------------------------------
+
+  # Decrypt secrets with the user's SSH key (agenix runs as root at activation).
+  age.identityPaths = [
+    "/Users/${username}/.ssh/id_ed25519"
+    "/etc/ssh/ssh_host_ed25519_key"
+  ];
+
+  # SSH connection details for host `dev` – keeps the private IP out of git.
+  # Decrypted to a user-readable file that ~/.ssh/config includes.
+  # Guarded so the flake still builds before the .age file is created.
+  age.secrets = lib.optionalAttrs (builtins.pathExists ../secrets/ssh-dev.age) {
+    "ssh-dev" = {
+      file = ../secrets/ssh-dev.age;
+      path = "/Users/${username}/.ssh/dev.conf";
+      owner = username;
+      mode = "0400";
+    };
+  };
 
   # ---------------------------------------------------------------------------
   # macOS system defaults

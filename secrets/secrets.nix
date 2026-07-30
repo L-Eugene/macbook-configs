@@ -32,6 +32,9 @@ in
   # The `publicKeys` list determines who can decrypt it.
   # ---------------------------------------------------------------------------
 
+  # SSH connection details (HostName/IP) for host `dev`.
+  "ssh-dev.age".publicKeys = [ machineKey ];
+
   # Example: a Wi-Fi password
   # "wifi-password.age".publicKeys = [ machineKey ];
 

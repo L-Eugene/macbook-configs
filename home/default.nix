@@ -164,8 +164,21 @@
     enableDefaultConfig = false;
     settings."*" = {
       AddKeysToAgent = "yes";
+      # UseKeychain is Apple-only. IgnoreUnknown makes non-Apple ssh skip it
+      # instead of aborting with "Bad configuration option: usekeychain".
+      IgnoreUnknown = "UseKeychain";
       UseKeychain = "yes";
     };
+
+    # Host `dev`. The IP (HostName) is kept out of git: it lives in an
+    # agenix-encrypted file decrypted to ~/.ssh/dev.conf at activation
+    # (see age.secrets."ssh-dev" in modules/system.nix).
+    extraConfig = ''
+      Host dev
+        User dev
+        ServerAliveInterval 60
+        Include ~/.ssh/dev.conf
+    '';
   };
 
   # ---------------------------------------------------------------------------
