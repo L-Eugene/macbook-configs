@@ -108,6 +108,28 @@
   system.primaryUser = username;
 
   # ---------------------------------------------------------------------------
+  # Power management
+  #
+  # On AC power the system never idle-sleeps, so TCP sessions (SSH, VPN, …)
+  # survive a locked screen. On battery it idle-sleeps after 30 minutes to
+  # preserve charge. Closing the lid always sleeps. pmset has no nix-darwin
+  # option, so apply it here.
+  # ---------------------------------------------------------------------------
+  system.activationScripts.postActivation.text = lib.mkAfter ''
+    echo "Configuring power management (no idle sleep on AC, 30 min on battery)…"
+    # Preserve existing TCP connections across sleep/wake.
+    /usr/bin/pmset -a tcpkeepalive 1
+    # Wake periodically for network access (Power Nap).
+    /usr/bin/pmset -a powernap 1
+    # On AC power: never idle-sleep the system (the display may still sleep).
+    /usr/bin/pmset -c sleep 0
+    # On battery: idle-sleep after 30 minutes.
+    /usr/bin/pmset -b sleep 30
+    # Always allow sleep when the lid is closed.
+    /usr/bin/pmset -a disablesleep 0
+  '';
+
+  # ---------------------------------------------------------------------------
   # Nix settings
   # ---------------------------------------------------------------------------
 
