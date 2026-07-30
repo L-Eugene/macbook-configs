@@ -91,40 +91,26 @@ in
   };
 
   # ---------------------------------------------------------------------------
-  # Visual Studio Code
-  #
-  # The app is installed by Homebrew Cask (see modules/homebrew.nix).
-  # The stub below lets home-manager invoke the Homebrew binary for extension
-  # management without pulling pkgs.vscode from nixpkgs.
+  # Visual Studio Code – app installed via Homebrew Cask, settings via Nix.
   # ---------------------------------------------------------------------------
   programs.vscode =
     let
-      # Thin wrapper so home-manager can call `code --install-extension`
-      # against the Homebrew-installed binary.
+      # Overrides the default pkgs.vscode (unfree) with a stub pointing to the
+      # Homebrew-installed binary; home-manager still writes settings.json.
       vscodeStub = pkgs.writeShellScriptBin "code" ''
         exec "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" "$@"
       '';
-
-      # Extensions available directly in nixpkgs
-      nixpkgsExts = with pkgs.vscode-extensions; [
-        # GitHub Pull Requests and Issues
-        github.vscode-pull-request-github
-      ];
-
-      # Extensions from the VSCode Marketplace (via nix-vscode-extensions).
-      # nix-vscode-extensions lowercases all publisher IDs, so
-      # "microsoft-IsvExpTools" → "microsoft-isvexptools".
-      marketplaceExts = [ ];
     in
     {
       enable = true;
       package = vscodeStub;
 
-      # Allow extensions installed manually from the UI alongside declared ones.
+      # Extensions are managed manually via the UI; declaring any here causes
+      # home-manager to write .extensions-immutable.json which fails when VSCode
+      # is installed by Homebrew and owns the extensions directory.
       mutableExtensionsDir = true;
 
       profiles.default = {
-        extensions = nixpkgsExts ++ marketplaceExts;
 
         userSettings = {
           # Editor
