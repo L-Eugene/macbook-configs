@@ -52,8 +52,8 @@
       cat = "bat";
       grep = "rg";
       find = "fd";
-      # Rebuild and switch the Darwin configuration
-      darwin-switch = "sudo darwin-rebuild switch --flake ${configRepoPath}";
+      # Update the repo (preserving local changes) then rebuild and switch.
+      darwin-switch = "git -C ${configRepoPath} pull --autostash && sudo darwin-rebuild switch --flake ${configRepoPath}";
     };
 
     initContent = ''
