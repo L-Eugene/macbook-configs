@@ -37,6 +37,9 @@
 
       # Password manager (KeePassXC is the actively-maintained successor to KeePassX)
       "keepassxc"
+
+      # Code editor – installed via cask to avoid nixpkgs unfree restrictions
+      "visual-studio-code"
     ];
 
     # Mac App Store applications (requires prior App Store sign-in)

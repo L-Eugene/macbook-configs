@@ -93,14 +93,18 @@ in
   # ---------------------------------------------------------------------------
   # Visual Studio Code
   #
-  # Extensions installed via nix-vscode-extensions (full Marketplace mirror):
-  #   • GitHub Pull Request and Issues  (github.vscode-pull-request-github)
-  #
-  # NOTE: Some proprietary extensions are intentionally installed manually
-  # from VSCode UI to avoid nixpkgs unfree-evaluation failures.
+  # The app is installed by Homebrew Cask (see modules/homebrew.nix).
+  # The stub below lets home-manager invoke the Homebrew binary for extension
+  # management without pulling pkgs.vscode from nixpkgs.
   # ---------------------------------------------------------------------------
   programs.vscode =
     let
+      # Thin wrapper so home-manager can call `code --install-extension`
+      # against the Homebrew-installed binary.
+      vscodeStub = pkgs.writeShellScriptBin "code" ''
+        exec "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" "$@"
+      '';
+
       # Extensions available directly in nixpkgs
       nixpkgsExts = with pkgs.vscode-extensions; [
         # GitHub Pull Requests and Issues
@@ -114,11 +118,10 @@ in
     in
     {
       enable = true;
-      package = pkgs.vscode;
+      package = vscodeStub;
 
-      # mutableExtensionsDir = false enforces that ONLY the extensions declared
-      # here are active, making the config fully reproducible.
-      mutableExtensionsDir = false;
+      # Allow extensions installed manually from the UI alongside declared ones.
+      mutableExtensionsDir = true;
 
       profiles.default = {
         extensions = nixpkgsExts ++ marketplaceExts;
