@@ -17,9 +17,9 @@ let
   # Public key definitions
   # ---------------------------------------------------------------------------
 
-  # Replace with the actual path to your SSH public key.
-  # Run `cat ~/.ssh/id_ed25519.pub` (or id_rsa.pub) to get your key.
-  machineKey = "ssh-ed25519 AAAA... user@macbook"; # <-- replace this line
+  # Read the machine's SSH public key from the current user's home (evaluated
+  # on the Mac, where agenix runs). Adjust the filename if not id_ed25519.
+  machineKey = builtins.readFile "${builtins.getEnv "HOME"}/.ssh/id_ed25519.pub";
 
   # Optional: add a YubiKey/hardware key or a remote backup key
   # backupKey = "ssh-ed25519 AAAA... backup-key";
