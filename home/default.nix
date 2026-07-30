@@ -177,7 +177,15 @@
       Host dev
         User dev
         ServerAliveInterval 60
+        RequestTTY yes
+        RemoteCommand screen -dR
         Include ~/.ssh/dev.conf
+
+      Host 172.19.*
+        User admin
+        StrictHostKeyChecking no
+        ServerAliveInterval 60
+        UserKnownHostsFile /dev/null
     '';
   };
 
