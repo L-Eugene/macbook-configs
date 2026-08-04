@@ -205,5 +205,8 @@
     # Process & system inspection
     htop
     btop
+
+    # AI assistant CLI
+    claude-code
   ];
 }
