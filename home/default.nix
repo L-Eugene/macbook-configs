@@ -157,6 +157,20 @@
   services.syncthing.enable = true;
 
   # ---------------------------------------------------------------------------
+  # ssh-noshell wrapper – calls ssh with RemoteCommand= to suppress any
+  # RemoteCommand directive set in ~/.ssh/config.
+  # ---------------------------------------------------------------------------
+  home.activation.sshNoshell =
+    let
+      wrapper = pkgs.writeShellScript "ssh-noshell" ''
+        exec /usr/bin/ssh -o RemoteCommand= "$@"
+      '';
+    in
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      $DRY_RUN_CMD ln -sf ${wrapper} /usr/local/bin/ssh-noshell
+    '';
+
+  # ---------------------------------------------------------------------------
   # SSH client
   # ---------------------------------------------------------------------------
   programs.ssh = {
