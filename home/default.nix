@@ -128,6 +128,10 @@
         "security.workspace.trust.enabled" = true;
         "security.workspace.trust.untrustedFiles" = "prompt";
 
+        # Remote SSH – use ssh-noshell to suppress RemoteCommand (screen -dR)
+        # so VSCode's -T connection isn't killed by screen requiring a terminal.
+        "remote.SSH.path" = "/etc/profiles/per-user/${username}/bin/ssh-noshell";
+
         # Nix
         "nix.enableLanguageServer" = true;
         "nix.serverPath" = "nil";
@@ -195,7 +199,7 @@
   home.packages = with pkgs; [
     # ssh-noshell – suppresses any RemoteCommand directive set in ~/.ssh/config
     (writeShellScriptBin "ssh-noshell" ''
-      exec /usr/bin/ssh -o RemoteCommand= "$@"
+      exec /usr/bin/ssh -o RemoteCommand=none "$@"
     '')
     # Archive tools
     zip
