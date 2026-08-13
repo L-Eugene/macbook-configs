@@ -40,6 +40,9 @@
 
       # Code editor – installed via cask to avoid nixpkgs unfree restrictions
       "visual-studio-code"
+
+      # Container runtime
+      "docker"
     ];
 
     # Mac App Store applications (requires prior App Store sign-in)
