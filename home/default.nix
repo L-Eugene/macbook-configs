@@ -161,6 +161,52 @@
   services.syncthing.enable = true;
 
   # ---------------------------------------------------------------------------
+  # Tinyproxy – lightweight HTTP/HTTPS proxy
+  # Runs as a user launchd agent; accessible at http://127.0.0.1:8787
+  # ---------------------------------------------------------------------------
+  launchd.agents.tinyproxy =
+    let
+      settings = {
+        Port = 8787;
+        LogLevel = "Connect";
+        # Multiple Allow entries – rendered as repeated "Allow <value>" lines.
+        # Tinyproxy uses CIDR notation for subnets, not shell-style wildcards.
+        Allow = [
+          "127.0.0.1"
+          "::1"
+          "172.19.0.0/16"
+        ];
+      };
+      conf = pkgs.writeText "tinyproxy.conf" (
+        lib.concatStringsSep "\n" (
+          lib.flatten (
+            lib.mapAttrsToList (
+              key: value:
+              if lib.isList value
+              then map (v: "${key} ${toString v}") value
+              else [ "${key} ${toString value}" ]
+            ) settings
+          )
+        )
+      );
+    in
+    {
+      enable = true;
+      config = {
+        ProgramArguments = [
+          "${pkgs.tinyproxy}/bin/tinyproxy"
+          "-d"
+          "-c"
+          "${conf}"
+        ];
+        RunAtLoad = true;
+        KeepAlive = true;
+        StandardOutPath = "/tmp/tinyproxy.log";
+        StandardErrorPath = "/tmp/tinyproxy.log";
+      };
+    };
+
+  # ---------------------------------------------------------------------------
   # SSH client
   # ---------------------------------------------------------------------------
   programs.ssh = {
@@ -183,6 +229,7 @@
         ServerAliveInterval 60
         RequestTTY yes
         RemoteCommand screen -dR
+        RemoteForward 48401 127.0.0.1:8787
         Include ~/.ssh/dev.conf
 
       Host 172.19.*

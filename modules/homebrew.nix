@@ -42,7 +42,10 @@
       "visual-studio-code"
 
       # Container runtime
-      "docker"
+      "docker-desktop"
+
+      # OpenVPN GUI client
+      "tunnelblick"
     ];
 
     # Mac App Store applications (requires prior App Store sign-in)
