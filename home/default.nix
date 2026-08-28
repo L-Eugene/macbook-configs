@@ -241,6 +241,21 @@
   };
 
   # ---------------------------------------------------------------------------
+  # .NET – required for the `pac` (Power Platform CLI) dotnet global tool
+  # ---------------------------------------------------------------------------
+  home.sessionPath = [ "$HOME/.dotnet/tools" ];
+
+  # DOTNET_ROOT tells dotnet global tools (like pac) where the Nix-managed
+  # runtime lives, since Nix doesn't register it at the standard system paths.
+  home.sessionVariables.DOTNET_ROOT = "${pkgs.dotnet-sdk_10}/share/dotnet";
+
+  home.activation.installPacCli = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ ! -f "$HOME/.dotnet/tools/pac" ]; then
+      $DRY_RUN_CMD ${pkgs.dotnet-sdk_10}/bin/dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+    fi
+  '';
+
+  # ---------------------------------------------------------------------------
   # Additional user packages
   # ---------------------------------------------------------------------------
   home.packages = with pkgs; [
@@ -263,5 +278,8 @@
 
     # AI assistant CLI
     claude-code
+
+    # .NET SDK – needed to install the `pac` Power Platform CLI global tool
+    dotnet-sdk_10
   ];
 }
