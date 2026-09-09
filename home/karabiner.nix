@@ -158,6 +158,21 @@ in
                         from = { key_code = "end"; modifiers = { optional = [ "any" ]; }; };
                         to = [ { key_code = "right_arrow"; modifiers = [ "left_command" ]; } ];
                       }
+
+                      # Ctrl+Alt+L → lock screen (Cmd+Ctrl+Q on macOS).
+                      # Must be before the generic Ctrl+L → Cmd+L rule below.
+                      {
+                        type = "basic";
+                        conditions = [ externalKeyboard ];
+                        from = {
+                          key_code = "l";
+                          modifiers = {
+                            mandatory = [ "left_control" "left_option" ];
+                            optional = [ "any" ];
+                          };
+                        };
+                        to = [ { key_code = "q"; modifiers = [ "left_command" "left_control" ]; } ];
+                      }
                     ]
                     # Ctrl+<key> → Cmd+<key> for all common keys (excluding arrows above)
                     ++ (map ctrlToCmd ctrlCmdKeys);
