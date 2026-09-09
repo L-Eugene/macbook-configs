@@ -147,6 +147,50 @@ nix --extra-experimental-features nix-command --extra-experimental-features flak
 sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
+### Automatic application updates
+
+`modules/auto-update.nix` installs a LaunchAgent (`org.nixos.homebrew-auto-update`)
+that runs **every Monday at 09:00** — or at the next wake, if the Mac was asleep:
+
+```sh
+brew update
+brew bundle install --file=<Brewfile generated from modules/homebrew.nix>
+brew cleanup --prune=30
+```
+
+Because `homebrew.greedyCasks = true`, casks that ship their own updater
+(Firefox, VSCode, Docker Desktop…) are upgraded too, instead of being skipped.
+The job never removes anything — `cleanup = "zap"` only runs during an explicit
+`darwin-rebuild switch`. Nix packages are *not* touched; those still update when
+you run `nix flake update` yourself.
+
+Casks listed in `unattendedCaskSkip` (currently **Tunnelblick**) are excluded
+from both the weekly job and `darwin-rebuild switch`. Tunnelblick's cask has to
+chown its app bundle to `root:wheel`, which macOS App Management (TCC) refuses
+for any non-approved process — including launchd jobs, which cannot be granted
+the permission at all. Skipping it keeps one un-upgradable cask from failing the
+whole run; Tunnelblick's built-in updater handles it. Skipped casks stay
+declared, so `zap` cleanup still keeps them installed. To upgrade one by hand,
+grant your terminal App Management in System Settings → Privacy & Security:
+
+```sh
+brew upgrade --cask tunnelblick
+```
+
+Check what happened:
+
+```sh
+tail -f ~/Library/Logs/homebrew-auto-update.log
+
+# Run it now instead of waiting for Monday:
+launchctl kickstart -k gui/$(id -u)/org.nixos.homebrew-auto-update
+```
+
+> **Google Chrome** is not managed here: `/Applications/Google Chrome.app` is
+> root-owned (installed by the corporate management stack), so Homebrew cannot
+> adopt it. It already updates itself every 5 hours through Google's privileged
+> Keystone updater.
+
 ---
 
 ## Editing the configuration
@@ -159,7 +203,8 @@ sudo darwin-rebuild --extra-experimental-features nix-command --extra-experiment
 │   ├── config_home-manager.nix ← home-manager integration
 │   ├── system.nix              ← macOS system defaults + agenix secrets
 │   ├── apps.nix                ← system-level Nix packages + fonts
-│   └── homebrew.nix            ← Homebrew casks (Firefox, KeePassXC, VSCode) + cleanup
+│   ├── homebrew.nix            ← Homebrew casks (Firefox, KeePassXC, VSCode) + cleanup
+│   └── auto-update.nix         ← weekly unattended upgrade of the Homebrew apps
 ├── home/
 │   └── default.nix             ← per-user config: Git, Zsh, VSCode settings, SSH, Syncthing…
 └── secrets/

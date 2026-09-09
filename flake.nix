@@ -81,6 +81,7 @@
           ./modules/system.nix
           ./modules/apps.nix
           ./modules/homebrew.nix
+          ./modules/auto-update.nix
 
           # Agenix system module (secrets decrypted at activation)
           agenix.darwinModules.default
