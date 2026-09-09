@@ -35,6 +35,15 @@
       # Web browser – set as default browser via activation script below
       "firefox"
 
+      # NOTE: Google Chrome is deliberately NOT listed here. /Applications/Google
+      # Chrome.app is root-owned (installed by the corporate management stack),
+      # so `brew` — which runs as the user — cannot adopt it, and listing it
+      # makes activation fail with "Permission denied". Chrome already updates
+      # itself through the privileged Keystone updater
+      # (/Library/Google/GoogleSoftwareUpdate, every 5 hours), so it needs
+      # nothing from us. To move it under Homebrew you would first have to
+      # `sudo rm -rf "/Applications/Google Chrome.app"`.
+
       # Password manager (KeePassXC is the actively-maintained successor to KeePassX)
       "keepassxc"
 
@@ -44,8 +53,12 @@
       # Container runtime
       "docker-desktop"
 
-      # OpenVPN GUI client
+      # OpenVPN GUI client. Upgrades are skipped automatically – see
+      # `unattendedCaskSkip` in modules/auto-update.nix for why.
       "tunnelblick"
+
+      # Per-device keyboard remapping (Windows-like shortcuts on external keyboard)
+      "karabiner-elements"
     ];
 
     # Mac App Store applications (requires prior App Store sign-in)
