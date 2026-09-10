@@ -136,10 +136,12 @@ in
                           modifiers = { optional = [ "any" ]; };
                         };
                         to = [ { key_code = "left_command"; } ];
+                        # Ctrl+Option+Space = "select next source in Input menu".
+                        # Ctrl+Space is consumed by MS Teams, so use this instead.
                         to_if_alone = [
                           {
                             key_code = "spacebar";
-                            modifiers = [ "left_control" ];
+                            modifiers = [ "left_control" "left_option" ];
                           }
                         ];
                       }

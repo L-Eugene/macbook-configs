@@ -95,21 +95,6 @@
 
     # macOS software update
     SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
-
-    # Input sources – list exactly the layouts you want available.
-    # Changes take effect after logout/login.
-    CustomUserPreferences."com.apple.HIToolbox" = {
-      AppleEnabledInputSources = [
-        {
-          "Bundle ID" = "com.apple.keylayout.US";
-          InputSourceKind = "Keyboard Layout";
-        }
-        {
-          "Bundle ID" = "com.apple.keylayout.RussianWin";
-          InputSourceKind = "Keyboard Layout";
-        }
-      ];
-    };
   };
 
   # ---------------------------------------------------------------------------

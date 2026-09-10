@@ -7,7 +7,10 @@
   ...
 }:
 {
-  imports = [ ./karabiner.nix ];
+  imports = [
+    ./karabiner.nix
+    ./input-sources.nix
+  ];
 
   home.username = username;
   home.homeDirectory = "/Users/${username}";
