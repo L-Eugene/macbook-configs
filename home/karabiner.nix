@@ -19,21 +19,22 @@ let
     ];
   };
 
-  # Generate a Ctrl+<key> → Cmd+<key> manipulator.
+  # Generate Ctrl+<key> → Cmd+<key> manipulators for both left and right Ctrl.
   # The general Ctrl→Cmd modifier remap would intercept the Ctrl key before
   # Ctrl+Arrow rules could fire, so we enumerate specific keys instead.
-  ctrlToCmd = key: {
+  ctrlToCmd = key: side: {
     type = "basic";
     conditions = [ externalKeyboard notTerminal ];
     from = {
       key_code = key;
       modifiers = {
-        mandatory = [ "left_control" ];
+        mandatory = [ "${side}_control" ];
         optional = [ "any" ];
       };
     };
     to = [ { key_code = key; modifiers = [ "left_command" ]; } ];
   };
+  ctrlToCmdBoth = key: [ (ctrlToCmd key "left") (ctrlToCmd key "right") ];
 
   # All letter and common symbol keys that should follow Ctrl→Cmd.
   # Arrow keys are intentionally excluded – Ctrl+Left/Right is word-jump (below).
@@ -85,17 +86,24 @@ in
                   manipulators =
                     [
                       # Ctrl+Left/Right → Option+Left/Right (word jump, Windows behaviour).
-                      # Listed before the Ctrl→Cmd rules so they take priority.
+                      # Both left and right Ctrl are covered. Listed before the
+                      # Ctrl→Cmd rules so they take priority.
                       # Ctrl+Shift+Left/Right selects by word (Shift passes through).
                       {
                         type = "basic";
                         conditions = [ externalKeyboard notTerminal ];
                         from = {
                           key_code = "left_arrow";
-                          modifiers = {
-                            mandatory = [ "left_control" ];
-                            optional = [ "any" ];
-                          };
+                          modifiers = { mandatory = [ "left_control" ]; optional = [ "any" ]; };
+                        };
+                        to = [ { key_code = "left_arrow"; modifiers = [ "left_option" ]; } ];
+                      }
+                      {
+                        type = "basic";
+                        conditions = [ externalKeyboard notTerminal ];
+                        from = {
+                          key_code = "left_arrow";
+                          modifiers = { mandatory = [ "right_control" ]; optional = [ "any" ]; };
                         };
                         to = [ { key_code = "left_arrow"; modifiers = [ "left_option" ]; } ];
                       }
@@ -104,10 +112,16 @@ in
                         conditions = [ externalKeyboard notTerminal ];
                         from = {
                           key_code = "right_arrow";
-                          modifiers = {
-                            mandatory = [ "left_control" ];
-                            optional = [ "any" ];
-                          };
+                          modifiers = { mandatory = [ "left_control" ]; optional = [ "any" ]; };
+                        };
+                        to = [ { key_code = "right_arrow"; modifiers = [ "left_option" ]; } ];
+                      }
+                      {
+                        type = "basic";
+                        conditions = [ externalKeyboard notTerminal ];
+                        from = {
+                          key_code = "right_arrow";
+                          modifiers = { mandatory = [ "right_control" ]; optional = [ "any" ]; };
                         };
                         to = [ { key_code = "right_arrow"; modifiers = [ "left_option" ]; } ];
                       }
@@ -176,8 +190,9 @@ in
                         to = [ { key_code = "q"; modifiers = [ "left_command" "left_control" ]; } ];
                       }
                     ]
-                    # Ctrl+<key> → Cmd+<key> for all common keys (excluding arrows above)
-                    ++ (map ctrlToCmd ctrlCmdKeys);
+                    # Ctrl+<key> → Cmd+<key> for all common keys (excluding arrows above),
+                    # for both left and right Ctrl.
+                    ++ (lib.concatMap ctrlToCmdBoth ctrlCmdKeys);
                 }
               ];
             };
