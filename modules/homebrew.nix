@@ -59,6 +59,9 @@
 
       # Per-device keyboard remapping (Windows-like shortcuts on external keyboard)
       "karabiner-elements"
+
+      # Image editor
+      "gimp"
     ];
 
     # Mac App Store applications (requires prior App Store sign-in)
