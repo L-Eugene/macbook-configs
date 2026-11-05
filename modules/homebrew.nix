@@ -69,6 +69,14 @@
     masApps = { };
   };
 
+  # Put `brew` on PATH. Appended (mkAfter) rather than prepended as
+  # `brew shellenv` would, so Nix-provided tools keep precedence over anything
+  # a cask drops into /opt/homebrew/bin.
+  environment.systemPath = lib.mkAfter [
+    "/opt/homebrew/bin"
+    "/opt/homebrew/sbin"
+  ];
+
   # ---------------------------------------------------------------------------
   # Set Firefox as the default browser.
   #
