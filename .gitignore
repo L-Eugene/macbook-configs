@@ -25,3 +25,8 @@ result-*
 
 *.lock
 .claude
+
+# Machine-local configuration. The real file lives OUTSIDE this repo at
+# ~/.config/macbook-configs/local.nix (see local.nix.example). This entry is a
+# safety net so a stray copy left in the working tree is never committed.
+local.nix

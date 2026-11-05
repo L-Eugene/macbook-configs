@@ -76,30 +76,100 @@ If you keep the default location above, `CONFIG_REPO_PATH` is effectively
 
 ### 2. Personalise the configuration
 
-Open `flake.nix` and edit the values near the top of the `outputs` section:
+**No machine-specific value is edited inside this repository.** They all live in
+a single file kept *outside* the checkout, so `git status` stays clean and
+nothing personal is ever committed:
 
-```nix
-# "aarch64-darwin" for Apple Silicon  |  "x86_64-darwin" for Intel
-system = "aarch64-darwin";
-
-# Your macOS short username (output of `whoami`)
-username = "changeme";
-
-# Machine hostname (System Preferences → Sharing → Computer Name)
-hostname = "macbook";
-
-# Path where this repository is cloned on your machine
-configRepoPath = "~/.config/nixpkgs";
+```sh
+mkdir -p ~/.config/macbook-configs
+cp local.nix.example ~/.config/macbook-configs/local.nix
+$EDITOR ~/.config/macbook-configs/local.nix
 ```
 
-Optionally fill in `home/default.nix` with your Git identity:
+Every key is optional — delete any you do not need and the fallback default
+from [`lib/local-config.nix`](lib/local-config.nix) applies instead. If the file
+is missing entirely, `darwinConfigurations` refuses to evaluate rather than
+build a machine from placeholder values.
 
 ```nix
-programs.git.settings.user = {
-  name  = "Your Name";
-  email = "you@example.com";
-};
+{
+  system         = "aarch64-darwin";   # "x86_64-darwin" on Intel
+  username       = "changeme";         # output of `whoami`
+  hostname       = "macbook";          # the .#<hostname> you build
+  configRepoPath = "$HOME/.config/nixpkgs";
+
+  gitUserName  = "Your Name";          # omit to leave git's own config alone
+  gitUserEmail = "you@example.com";
+
+  # Opt-in only – unset means loopback-only proxy and strict SSH checking.
+  # trustedSubnet   = "10.0.0.0/16";   # proxy ACL
+  # trustedHostGlob = "10.0.*";        # relaxed SSH host-key checking
+  # trustedHostUser = "admin";
+
+  tinyproxyPort    = 8787;
+  devSshHost       = "dev";
+  devSshUser       = "dev";
+  devRemoteForward = 48401;
+}
 ```
+
+The loader looks for the file in this order, using the first that exists:
+
+1. `$MACBOOK_CONFIGS_LOCAL`
+2. `$HOME/.config/macbook-configs/local.nix`
+3. `/Users/$SUDO_USER/.config/macbook-configs/local.nix` — so that
+   `sudo darwin-rebuild` still finds it if sudo resets `HOME` to `/var/root`
+
+> **`--impure` is required.** The file sits outside the flake source, and a
+> flake in a git repository only ever sees git-tracked files. Every
+> `darwin-rebuild` invocation below therefore passes `--impure`.
+>
+> Forgetting it no longer fails obscurely: in pure mode `builtins.getEnv`
+> returns `""`, so no candidate path exists at all, and `darwinConfigurations`
+> refuses to evaluate with an explicit message telling you to add `--impure`
+> rather than silently building the placeholder machine. These outputs still
+> work without it: `nix fmt`, `nix run .#agenix`, `nix eval .#localConfigReport`.
+> `nix flake check` and `nix flake show` do need `--impure`, because they force
+> `darwinConfigurations`.
+
+#### Guardrail: confirmation before any default is applied
+
+Nix evaluation is non-interactive — it cannot stop and ask a question — so the
+check runs as a separate step *before* the rebuild.
+`scripts/preflight-local-config.sh` (installed as `preflight-local-config`, and
+chained into the `darwin-switch` alias) asks the flake which keys are unset,
+prints them with the default that would be used, and requires a `y` to proceed:
+
+```
+Machine-local config: /Users/you/.config/macbook-configs/local.nix
+
+2 value(s) are not set and will fall back to built-in defaults:
+
+    tinyproxyPort = 8787
+    trustedSubnet = null   (feature left disabled)
+
+These defaults are placeholders, not your machine's real values.
+Applying them can build the wrong hostname or user. Edit the file above
+(template: local.nix.example) to set them.
+
+Continue with these defaults? [y/N]
+```
+
+When every key is set it prints nothing and exits 0. Anything other than `y`
+aborts before the rebuild, and a bare Enter aborts. Run it by hand any time:
+
+```sh
+preflight-local-config ~/.config/nixpkgs
+```
+
+| Variable | Effect |
+|---|---|
+| `MACBOOK_CONFIGS_ASSUME_YES=1` | Accept all fallbacks without prompting |
+| `MACBOOK_CONFIGS_STRICT=1` | Make *evaluation itself* fail on any unset key. Covers invocations that bypass the wrapper and so never reach the prompt |
+
+On a non-interactive terminal the question cannot be asked, so the preflight
+refuses rather than defaulting silently; set `MACBOOK_CONFIGS_ASSUME_YES=1` for
+unattended runs.
 
 ### 3. Bootstrap nix-darwin (first run only)
 
@@ -108,7 +178,7 @@ Initial system activation must be run as `root`.
 If `darwin-rebuild` is not yet in your `PATH`:
 
 ```sh
-sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
+sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --impure --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 ### 4. Apply the configuration
@@ -116,7 +186,7 @@ sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experi
 On every subsequent change:
 
 ```sh
-sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
+sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --impure --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 Or use the shell alias set up by this config:
@@ -137,14 +207,14 @@ darwin-switch
 
 ```sh
 nix --extra-experimental-features nix-command --extra-experimental-features flakes flake update
-sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
+sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --impure --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 ### Update a single input (e.g. nixpkgs only)
 
 ```sh
 nix --extra-experimental-features nix-command --extra-experimental-features flakes flake lock --update-input nixpkgs
-sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
+sudo darwin-rebuild --extra-experimental-features nix-command --extra-experimental-features flakes switch --impure --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"
 ```
 
 ### Automatic application updates
@@ -196,8 +266,17 @@ launchctl kickstart -k gui/$(id -u)/org.nixos.homebrew-auto-update
 ## Editing the configuration
 
 ```
+~/.config/macbook-configs/
+└── local.nix                   ← NOT in git: username, hostname, git identity,
+                                  subnet, ports… (template: local.nix.example)
+
 ~/.config/nixpkgs/
-├── flake.nix                   ← top-level inputs, system/username/hostname
+├── flake.nix                   ← top-level inputs; loads the local config above
+├── local.nix.example           ← template for ~/.config/macbook-configs/local.nix
+├── lib/
+│   └── local-config.nix        ← local-config loader + fallback defaults
+├── scripts/
+│   └── preflight-local-config.sh ← asks before any fallback default is applied
 ├── modules/
 │   ├── config_host.nix         ← hostname + primary user account
 │   ├── config_home-manager.nix ← home-manager integration
@@ -346,12 +425,18 @@ sudo nix-collect-garbage --delete-older-than 30d
 
 | Problem | Solution |
 |---|---|
-| `darwin-rebuild: command not found` | Run `sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"` |
+| `darwin-rebuild: command not found` | Run `sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --impure --flake "${CONFIG_REPO_PATH:-$HOME/.config/nixpkgs}"` |
 | Homebrew cask not found | Run `brew update` then retry `darwin-rebuild switch` |
 | VSCode extension missing | Check the publisher/name against the [Marketplace](https://marketplace.visualstudio.com/) and ensure `nix flake update` was run |
 | Default browser dialog never appeared | Run `defaultbrowser firefox` manually in your terminal |
 | Syncthing not starting | Check `launchctl list | grep syncthing`; logs are in `~/Library/Logs/` |
 | `agenix: no identity found` | Ensure `~/.ssh/id_ed25519` exists and matches a key in `secrets/secrets.nix` |
+| `This flake was evaluated in PURE mode…` | You forgot `--impure`. Add it |
+| `error: flake does not provide attribute … darwinConfigurations."<your-host>"` | You passed `--impure`, but the local config still was not found (so `hostname` is the placeholder). Check that `~/.config/macbook-configs/local.nix` exists. Confirm what is loaded with `nix eval --impure --json .#darwinConfigurations --apply builtins.attrNames` |
+| `Unknown key(s) in machine-local config` | A key in `local.nix` is misspelled — the error lists every supported key |
+| Preflight says `NO FILE FOUND` | `~/.config/macbook-configs/local.nix` does not exist, or `$MACBOOK_CONFIGS_LOCAL` points somewhere wrong. Copy `local.nix.example` into place |
+| Preflight refuses: `Not running on an interactive terminal` | Deliberate — it will not apply placeholder defaults unattended. Set `MACBOOK_CONFIGS_ASSUME_YES=1` if that is really what you want |
+| `preflight: could not evaluate …#localConfigReport` | Run the printed `nix eval` command to see the underlying error (usually a syntax error in `local.nix`) |
 
 ---
 

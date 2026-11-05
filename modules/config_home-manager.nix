@@ -1,9 +1,9 @@
 # home-manager integration settings
-{ username, configRepoPath, nix-vscode-extensions, agenix, system, ... }:
+{ local, username, configRepoPath, nix-vscode-extensions, agenix, system, ... }:
 
 let
   specialArgs = {
-    inherit username configRepoPath nix-vscode-extensions agenix system;
+    inherit local username configRepoPath nix-vscode-extensions agenix system;
   };
 in
 {

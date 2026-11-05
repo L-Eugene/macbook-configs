@@ -2,10 +2,27 @@
 {
   pkgs,
   lib,
+  local,
   username,
   configRepoPath,
   ...
 }:
+let
+  # Both keys are optional: an unset one is simply omitted from ~/.gitconfig so
+  # git keeps falling back to its own global/per-repo value.
+  gitUser =
+    lib.optionalAttrs (local.gitUserName != null) { name = local.gitUserName; }
+    // lib.optionalAttrs (local.gitUserEmail != null) { email = local.gitUserEmail; };
+
+  # Guardrail: lists any machine-local value that is about to fall back to a
+  # built-in default and asks before the rebuild applies it. Nix evaluation
+  # cannot prompt, so this has to run as a separate step beforehand.
+  preflightLocalConfig = pkgs.writeShellApplication {
+    name = "preflight-local-config";
+    runtimeInputs = [ pkgs.jq ];
+    text = builtins.readFile ../scripts/preflight-local-config.sh;
+  };
+in
 {
   imports = [
     ./karabiner.nix
@@ -26,15 +43,15 @@
   # ---------------------------------------------------------------------------
   programs.git = {
     enable = true;
-    # Fill in your identity; or override per-repo with git config
-    # settings.user.name = "Your Name";
-    # settings.user.email = "you@example.com";
+    # Identity comes from ~/.config/macbook-configs/local.nix (gitUserName /
+    # gitUserEmail) so it is never committed here.
     settings = {
       init.defaultBranch = "main";
       pull.rebase = true;
       push.autoSetupRemote = true;
       core.autocrlf = "input";
-    };
+    }
+    // lib.optionalAttrs (gitUser != { }) { user = gitUser; };
     ignores = [
       ".DS_Store"
       "*.swp"
@@ -57,8 +74,15 @@
       cat = "bat";
       grep = "rg";
       find = "fd";
-      # Update the repo (preserving local changes) then rebuild and switch.
-      darwin-switch = "git -C ${configRepoPath} pull --autostash && sudo darwin-rebuild switch --flake ${configRepoPath}";
+      # Update the repo (preserving local changes), check for machine-local
+      # values that would silently fall back to a default, then rebuild.
+      #
+      # The preflight runs before sudo so it can prompt on your terminal.
+      #
+      # --impure: machine-specific values are read from a file outside the
+      # flake source (see lib/local-config.nix). MACBOOK_CONFIGS_LOCAL is passed
+      # explicitly because sudo may reset HOME to /var/root before nix evaluates.
+      darwin-switch = "git -C ${configRepoPath} pull --autostash && preflight-local-config ${configRepoPath} && sudo MACBOOK_CONFIGS_LOCAL=\"$HOME/.config/macbook-configs/local.nix\" darwin-rebuild switch --impure --flake ${configRepoPath}";
     };
 
     initContent = ''
@@ -172,15 +196,16 @@
   launchd.agents.tinyproxy =
     let
       settings = {
-        Port = 8787;
+        Port = local.tinyproxyPort;
         LogLevel = "Connect";
         # Multiple Allow entries – rendered as repeated "Allow <value>" lines.
         # Tinyproxy uses CIDR notation for subnets, not shell-style wildcards.
+        # The private subnet is site-specific and comes from local.nix.
         Allow = [
           "127.0.0.1"
           "::1"
-          "172.19.0.0/16"
-        ];
+        ]
+        ++ lib.optional (local.trustedSubnet != null) local.trustedSubnet;
       };
       conf = pkgs.writeText "tinyproxy.conf" (
         lib.concatStringsSep "\n" (
@@ -225,20 +250,24 @@
       UseKeychain = "yes";
     };
 
-    # Host `dev`. The IP (HostName) is kept out of git: it lives in an
-    # agenix-encrypted file decrypted to ~/.ssh/dev.conf at activation
-    # (see age.secrets."ssh-dev" in modules/system.nix).
+    # The dev host's name/user/ports come from local.nix. Its IP (HostName) is
+    # kept out of git too: it lives in an agenix-encrypted file decrypted to
+    # ~/.ssh/<devSshHost>.conf at activation (see age.secrets in system.nix).
     extraConfig = ''
-      Host dev
-        User dev
+      Host ${local.devSshHost}
+        User ${local.devSshUser}
         ServerAliveInterval 60
         RequestTTY yes
         RemoteCommand screen -dR
-        RemoteForward 48401 127.0.0.1:8787
-        Include ~/.ssh/dev.conf
+        RemoteForward ${toString local.devRemoteForward} 127.0.0.1:${toString local.tinyproxyPort}
+        Include ~/.ssh/${local.devSshHost}.conf
+    ''
+    # Hosts on the private subnet are re-imaged often, so their host keys
+    # change; skip the checks for them. Site-specific, hence local.nix.
+    + lib.optionalString (local.trustedHostGlob != null) ''
 
-      Host 172.19.*
-        User admin
+      Host ${local.trustedHostGlob}
+        User ${local.trustedHostUser}
         StrictHostKeyChecking no
         ServerAliveInterval 60
         UserKnownHostsFile /dev/null
@@ -264,6 +293,9 @@
   # Additional user packages
   # ---------------------------------------------------------------------------
   home.packages = with pkgs; [
+    # Guardrail used by the `darwin-switch` alias (and runnable on its own).
+    preflightLocalConfig
+
     # ssh-noshell – suppresses any RemoteCommand directive set in ~/.ssh/config
     (writeShellScriptBin "ssh-noshell" ''
       exec /usr/bin/ssh -o RemoteCommand=none "$@"

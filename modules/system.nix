@@ -2,6 +2,7 @@
 {
   pkgs,
   lib,
+  local,
   username,
   ...
 }:
@@ -20,13 +21,14 @@
     "/etc/ssh/ssh_host_ed25519_key"
   ];
 
-  # SSH connection details for host `dev` – keeps the private IP out of git.
-  # Decrypted to a user-readable file that ~/.ssh/config includes.
+  # SSH connection details for the dev host – keeps the private IP out of git.
+  # Decrypted to a user-readable file that ~/.ssh/config includes; the filename
+  # tracks local.devSshHost so it always matches the `Include` in home/default.nix.
   # Guarded so the flake still builds before the .age file is created.
   age.secrets = lib.optionalAttrs (builtins.pathExists ../secrets/ssh-dev.age) {
     "ssh-dev" = {
       file = ../secrets/ssh-dev.age;
-      path = "/Users/${username}/.ssh/dev.conf";
+      path = "/Users/${username}/.ssh/${local.devSshHost}.conf";
       owner = username;
       mode = "0400";
     };

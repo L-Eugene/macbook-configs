@@ -1,0 +1,80 @@
+# Machine-local configuration — TEMPLATE.
+#
+# Copy this file to its real location, which is deliberately OUTSIDE this
+# repository so nothing personal is ever committed:
+#
+#   mkdir -p ~/.config/macbook-configs
+#   cp local.nix.example ~/.config/macbook-configs/local.nix
+#   $EDITOR ~/.config/macbook-configs/local.nix
+#
+# Every key is optional. Delete any line you do not care about and the default
+# from lib/local-config.nix applies instead. Setting a key to `null` has the
+# same effect as leaving it out.
+#
+# You will not fall back to a default by accident: before each rebuild the
+# `preflight-local-config` guardrail lists every key you left unset, shows the
+# default it would use, and asks for confirmation.
+#
+# Reading this file requires impure evaluation, so rebuild with:
+#
+#   darwin-rebuild switch --impure --flake <repo>#<hostname>
+#
+# or just use the `darwin-switch` shell alias, which already does that.
+{
+  # ---------------------------------------------------------------------------
+  # Identity of this machine
+  # ---------------------------------------------------------------------------
+
+  # "aarch64-darwin" for Apple Silicon (M-series); "x86_64-darwin" for Intel.
+  system = "aarch64-darwin";
+
+  # macOS short username — the one `whoami` prints.
+  username = "changeme";
+
+  # Machine hostname. Must match the darwinConfigurations attribute you build,
+  # i.e. `darwin-rebuild switch --impure --flake .#<hostname>`.
+  hostname = "macbook";
+
+  # Where this repository is checked out. Used by the `darwin-switch` alias.
+  configRepoPath = "$HOME/.config/nixpkgs";
+
+  # ---------------------------------------------------------------------------
+  # Git identity — omit either key to leave it to git's own global config
+  # ---------------------------------------------------------------------------
+  gitUserName = "Your Name";
+  gitUserEmail = "you@example.com";
+
+  # ---------------------------------------------------------------------------
+  # Private network
+  # ---------------------------------------------------------------------------
+
+  # Commented out on purpose: copying the template unchanged must not open the
+  # proxy or disable SSH host-key checking for a network you never chose.
+
+  # Subnet the local HTTP proxy accepts connections from, in CIDR notation
+  # (tinyproxy does not understand shell-style wildcards). Leave unset to
+  # restrict the proxy to loopback only.
+  # trustedSubnet = "10.0.0.0/16";
+
+  # Hosts matching this ssh_config glob get relaxed host-key checking
+  # (StrictHostKeyChecking no), because they are re-imaged often. Keep it as
+  # narrow as possible. Leave unset to drop the block entirely.
+  # trustedHostGlob = "10.0.*";
+  # trustedHostUser = "admin";
+
+  # ---------------------------------------------------------------------------
+  # Local proxy and remote dev host
+  # ---------------------------------------------------------------------------
+
+  # tinyproxy listens here (http://127.0.0.1:<port>).
+  tinyproxyPort = 8787;
+
+  # `ssh <devSshHost>` connects to the remote dev box. Its HostName/IP is NOT
+  # set here — it stays in the agenix-encrypted secrets/ssh-dev.age, which is
+  # decrypted at activation to ~/.ssh/<devSshHost>.conf.
+  devSshHost = "dev";
+  devSshUser = "dev";
+
+  # Port opened on the dev host that tunnels back to the local proxy above.
+  devRemoteForward = 48401;
+}

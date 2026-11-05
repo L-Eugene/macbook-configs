@@ -41,27 +41,37 @@
     }:
     let
       # -----------------------------------------------------------------------
-      # Edit these values to match your machine before applying.
+      # Machine-specific values are NOT stored in this repository. They are read
+      # from ~/.config/macbook-configs/local.nix (see local.nix.example for a
+      # template); anything that file does not set falls back to the defaults in
+      # lib/local-config.nix.
+      #
+      # Because that file lives outside the flake source, evaluation must be
+      # impure:
+      #
+      #   darwin-rebuild switch --impure --flake .#$(hostname -s)
       # -----------------------------------------------------------------------
+      localConfig = import ./lib/local-config.nix {
+        lib = nixpkgs.lib;
+        # Resolves against the copied flake source. Present only when the flake
+        # was referenced as `path:` — the git fetcher omits gitignored files.
+        sourceFile = ./local.nix;
+      };
 
-      # "aarch64-darwin" for Apple Silicon (M-series); "x86_64-darwin" for Intel.
-      system = "aarch64-darwin";
+      local = localConfig.config;
 
-      # Your macOS short username (the one shown by `whoami`).
-      username = "changeme";
-
-      # Machine hostname (System Preferences → Sharing → Computer Name).
-      hostname = "macbook";
-
-      # Path to this flake repository on your machine.
-      configRepoPath = "~/.config/nixpkgs";
-
-      # -----------------------------------------------------------------------
+      inherit (local)
+        system
+        username
+        hostname
+        configRepoPath
+        ;
 
       pkgs = nixpkgs.legacyPackages.${system};
 
       specialArgs = {
         inherit
+          local
           username
           hostname
           configRepoPath
@@ -73,23 +83,68 @@
     in
     {
       # Primary Darwin configuration – apply with:
-      #   darwin-rebuild switch --flake .#${hostname}
-      darwinConfigurations.${hostname} = nix-darwin.lib.darwinSystem {
-        inherit system specialArgs;
-        modules = [
-          ./modules/config_host.nix
-          ./modules/system.nix
-          ./modules/apps.nix
-          ./modules/homebrew.nix
-          ./modules/auto-update.nix
+      #   darwin-rebuild switch --flake path:<repo>#${hostname}
+      #
+      # If local.nix cannot be found, every value would silently be a
+      # placeholder and asking for the real host reports a baffling "flake does
+      # not provide attribute". Fail with the actual reason instead. Only this
+      # output is gated: the formatter, packages and localConfigReport keep
+      # working so the problem can still be diagnosed.
+      darwinConfigurations =
+        if localConfig.notFound then
+          throw ''
+            local.nix could not be found, so every machine-specific value would
+            fall back to a placeholder — building a configuration for the wrong
+            user and hostname.
 
-          # Agenix system module (secrets decrypted at activation)
-          agenix.darwinModules.default
+            Most likely this flake was referenced as a plain path. local.nix is
+            .gitignore'd, and a flake in a git repository only sees git-TRACKED
+            files, so it is invisible that way. Use the `path:` fetcher, which
+            copies the directory as-is:
 
-          # home-manager integration
-          home-manager.darwinModules.home-manager
-          ./modules/config_home-manager.nix
-        ];
+                darwin-rebuild switch --flake path:<repo>#<hostname>
+                nix build path:<repo>#darwinConfigurations.<hostname>.system
+
+            If local.nix simply does not exist yet, create it from the template:
+
+                cp <repo>/local.nix.example <repo>/local.nix
+
+            A copy outside the repo (~/.config/macbook-configs/local.nix or
+            $MACBOOK_CONFIGS_LOCAL) is also honoured, but only with --impure.
+            The `darwin-switch` alias uses that route.
+          ''
+        else
+          {
+            ${hostname} = nix-darwin.lib.darwinSystem {
+              inherit system specialArgs;
+              modules = [
+                ./modules/config_host.nix
+                ./modules/system.nix
+                ./modules/apps.nix
+                ./modules/homebrew.nix
+                ./modules/auto-update.nix
+
+                # Agenix system module (secrets decrypted at activation)
+                agenix.darwinModules.default
+
+                # home-manager integration
+                home-manager.darwinModules.home-manager
+                ./modules/config_home-manager.nix
+              ];
+            };
+          };
+
+      # Which machine-local values are set, and which would fall back to a
+      # default. Queried by the preflight guardrail (scripts/preflight-local-config.sh)
+      # so it can list the fallbacks and ask before a rebuild applies them:
+      #   nix eval --impure --json .#localConfigReport
+      # Note this still cannot be read while MACBOOK_CONFIGS_STRICT is set:
+      # darwinConfigurations is keyed by the hostname from the merged config,
+      # which throws under strict, and that breaks the whole output set. The
+      # preflight therefore clears that variable for its query.
+      localConfigReport = {
+        inherit (localConfig) source missing;
+        missingNames = builtins.attrNames localConfig.missing;
       };
 
       # Expose the agenix CLI so you can run `nix run .#agenix -- -e secret.age`
