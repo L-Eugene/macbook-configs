@@ -47,6 +47,11 @@
       # ---------------------------------------------------------------------------
       openssh
       nmap
+      # telnet only – full inetutils would shadow macOS ping/ifconfig/hostname/etc.
+      (runCommand "telnet" { } ''
+        mkdir -p $out/bin
+        ln -s ${inetutils}/bin/telnet $out/bin/telnet
+      '')
 
       # ---------------------------------------------------------------------------
       # macOS-specific helpers
