@@ -24,6 +24,9 @@ result-*
 *~
 
 *.lock
+# Pin flake inputs: the git fetcher only sees tracked files, so an ignored
+# flake.lock is never read and every rebuild re-resolves to the latest inputs.
+!flake.lock
 .claude
 
 # Machine-local configuration. The real file lives OUTSIDE this repo at
