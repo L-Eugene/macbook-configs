@@ -62,6 +62,9 @@
 
       # Image editor
       "gimp"
+
+      # Universal database client (Community Edition)
+      "dbeaver-community"
     ];
 
     # Mac App Store applications (requires prior App Store sign-in)
